@@ -2,6 +2,7 @@ package controllers;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import models.NameComparator;
 import models.Record;
@@ -151,7 +152,7 @@ public class QuestionProcessor {
 	}
 	
 	private void printSortedRecords() {
-		records.sort(new NameComparator());
+		Collections.sort(records, new NameComparator());
 		
 		int index = 1;
 		for (Record r: records) {
@@ -159,17 +160,29 @@ public class QuestionProcessor {
 			index++;
 		}
 	}
+	
+	private static void printCorrectQuestionFormat() {
+		System.out.println("Question format is not correct.");
+		System.out.println("Correct format:");
+		System.out.println("	Who created [X]?");
+	}
 
 	public static void main(String[] args) {
 		/* TEST print args 
+		System.out.println("========== args =========");
 		for (int i = 0; i < args.length; i++) {
-			System.out.println(args[i]);
+			System.out.println("'" + args[i] + "'");
 		}
 		System.out.println("========================");
 		*/
 		
-		// TODO Handle arg checks in bash script
+		// Check arguments
+		if (args.length < 4 || !args[1].toLowerCase().equals("who") || !args[2].toLowerCase().equals("created")) {
+			printCorrectQuestionFormat();
+			System.exit(0);
+		}
 		
+		// Begin processing
 		QuestionProcessor questionProcessor = new QuestionProcessor(args);
 		questionProcessor.execute();
 	}
