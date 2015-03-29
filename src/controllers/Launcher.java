@@ -1,8 +1,9 @@
-package project;
+package controllers;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.Set;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -37,7 +38,8 @@ public class Launcher {
 		    JSONObject response = (JSONObject)parser.parse(httpResponse.parseAsString());
 		    JSONArray results = (JSONArray)response.get("result");
 		    for (Object result : results) {
-		      System.out.println(JsonPath.read(result,"$.name").toString());
+		    	System.out.println(JsonPath.read(result,"$.name").toString());
+		    	System.out.println(JsonPath.read(result,"$.name").toString());
 		    }
 		} catch (Exception ex) {
 		    ex.printStackTrace();
@@ -51,7 +53,7 @@ public class Launcher {
 	        HttpTransport httpTransport = new NetHttpTransport();
 	        HttpRequestFactory requestFactory = httpTransport.createRequestFactory();
 	        JSONParser parser = new JSONParser();
-	        String topicId = "/m/0d6lp";
+	        String topicId = "/m/03s9v";
 	        GenericUrl url = new GenericUrl("https://www.googleapis.com/freebase/v1/topic" + topicId);
 	        url.put("key", properties.get("API_KEY"));
 	        HttpRequest request = requestFactory.buildGetRequest(url);
@@ -70,8 +72,15 @@ public class Launcher {
 
 	
 	public static void main(String[] args) {
-		ArrayList<String> midArray = step1("bill gates");
+		ArrayList<String> midArray = step1("issac newton");
 		JSONObject topic = step2(midArray);
+		System.out.println(topic);
+		JSONObject property = (JSONObject) topic.get("property");
+		Set<String> propertyList = property.keySet();
+		for (String p: propertyList) {
+			if (p.startsWith("/people/person")) System.out.println(p);
+		}
+		System.out.println(JsonPath.read(topic,"$.property['/people/person/date_of_birth'].values[0].value"));
 	}
 
 }
