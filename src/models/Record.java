@@ -25,6 +25,19 @@ public class Record {
 		return mCreations;
 	}
 	
+	public String getCreationsString() {
+		StringBuffer str = new StringBuffer();
+
+		for (int i = 0; i < mCreations.size(); i++) {
+			if (i == 0) str.append(mCreations.get(i));
+			else if (i == mCreations.size()-1 && mCreations.size() == 2) str.append(" and " + mCreations.get(i));
+			else if (i == mCreations.size()-1 && mCreations.size() != 2) str.append(", and " + mCreations.get(i));
+			else str.append(", " + mCreations.get(i));
+		}
+		
+		return str.toString();
+	}
+	
 	public void addCreation(String creation) {
 		mCreations.add(creation);
 	}
@@ -34,9 +47,10 @@ public class Record {
 		str.append(mName + " (as " + mType + ") created ");
 		
 		for (int i = 0; i < mCreations.size(); i++) {
-			if (i == mCreations.size()-1) str.append("and <" + mCreations.get(i) + ">");
-			else if (mCreations.size() == 2) str.append("<" + mCreations.get(i) + "> ");
-			else str.append("<" + mCreations.get(i) + ">, ");
+			if (i == 0) str.append("<" + mCreations.get(i) + ">");
+			else if (i == mCreations.size()-1 && mCreations.size() == 2) str.append(" and <" + mCreations.get(i) + ">");
+			else if (i == mCreations.size()-1 && mCreations.size() != 2) str.append(", and <" + mCreations.get(i) + ">");
+			else str.append(", <" + mCreations.get(i) + ">");
 		}
 		
 		return str.toString();

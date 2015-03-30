@@ -7,6 +7,7 @@ import java.util.Collections;
 import models.NameComparator;
 import models.Record;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -20,19 +21,24 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 
 public class QuestionProcessor {
+	private final boolean isInShellMode;
 	private final String API_KEY;
 	private final String queryTerm;
-	private ArrayList<Record> records; 
+	private ArrayList<Record> records;
+	private int maxPersonNameLength = -1;
 	
 	public QuestionProcessor(String[] args) {
 		records = new ArrayList<Record>();
 		
+		// Set print mode
+		isInShellMode = args[0].matches("true");
+		
 		// Store API_KEY
-		API_KEY = args[0];
+		API_KEY = args[1];
 		
 		// Extract query terms
 		StringBuffer queryTermBuffer = new StringBuffer();
-		for (int i = 3; i < args.length; i++) {
+		for (int i = 4; i < args.length; i++) {
 			if ((i == args.length - 1)) {
 				if (args[i].charAt(args[i].length()-1) == '?') queryTermBuffer.append(args[i].substring(0, args[i].length()-1));
 				else queryTermBuffer.append(args[i]);
@@ -55,7 +61,9 @@ public class QuestionProcessor {
 		if (result != null) {
 //			System.out.println(result);///
 			for (Object rawRecord: result) {
-				Record record = new Record(((JSONObject)rawRecord).get("name").toString(), "Author");
+				String personName = ((JSONObject)rawRecord).get("name").toString();
+				Record record = new Record(personName, "Author");
+				if (personName.length() > maxPersonNameLength) maxPersonNameLength = personName.length();
 				
 				JSONArray works = (JSONArray) ((JSONObject) rawRecord).get("/book/author/works_written");
 				for (Object work: works) record.addCreation(((JSONObject) work).get("a:name").toString());
@@ -68,7 +76,9 @@ public class QuestionProcessor {
 		if (result != null) {
 //			System.out.println(result);///
 			for (Object rawRecord: result) {
-				Record record = new Record(((JSONObject)rawRecord).get("name").toString(), "Businessperson");
+				String personName = ((JSONObject)rawRecord).get("name").toString();
+				Record record = new Record(personName, "Businessperson");
+				if (personName.length() > maxPersonNameLength) maxPersonNameLength = personName.length();
 				
 				JSONArray orgs = (JSONArray) ((JSONObject) rawRecord).get("/organization/organization_founder/organizations_founded");
 				for (Object org: orgs) record.addCreation(((JSONObject) org).get("a:name").toString());
@@ -154,10 +164,48 @@ public class QuestionProcessor {
 	private void printSortedRecords() {
 		Collections.sort(records, new NameComparator());
 		
-		int index = 1;
-		for (Record r: records) {
-			System.out.println(index + ". " + r);
-			index++;
+		// Shell mode is on
+		if (isInShellMode) {
+			final int BOX_WIDTH = 100;
+			
+			// Print title
+			System.out.println(" " + StringUtils.center("", BOX_WIDTH-2, "-") + " ");
+			String title = "Who created " + queryTerm + "?";
+			System.out.println("| " + StringUtils.center(title, BOX_WIDTH-4) + " |");
+			System.out.println(" " + StringUtils.center("", BOX_WIDTH-2, "-") + " ");
+			
+			// Print records
+			for (Record r: records) {
+				int firstCellLength = (int) ((BOX_WIDTH - (3+maxPersonNameLength) - 7)/2.0);
+				int secondCellLength = BOX_WIDTH - (3+maxPersonNameLength) - 7 - firstCellLength;
+				
+				// Print person name and titles
+				System.out.print("| " + StringUtils.rightPad(r.getName(), maxPersonNameLength) + " ");
+				System.out.print("| " + StringUtils.rightPad("AS", firstCellLength) + " | ");
+				System.out.println(StringUtils.rightPad("CREATION", secondCellLength) + " |");
+				// Print separator
+				System.out.print("| " + StringUtils.rightPad("", maxPersonNameLength) + " ");
+				System.out.print("--" + StringUtils.rightPad("", firstCellLength, "-") + "---");
+				System.out.println(StringUtils.rightPad("", secondCellLength, "-") + "- ");
+				// Print content
+				System.out.print("| " + StringUtils.rightPad("", maxPersonNameLength) + " ");
+				System.out.print("| " + StringUtils.rightPad(r.getType(), firstCellLength) + " | ");
+				String creations = r.getCreationsString();
+				if (creations.length() > secondCellLength) creations = creations.substring(0, secondCellLength-3) + "...";
+				System.out.println(StringUtils.rightPad(creations, secondCellLength) + " |");
+				// Print separator
+				System.out.println(" " + StringUtils.center("", BOX_WIDTH-2, "-") + " ");
+			}
+		}
+		// Shell mode is not on
+		else {
+			int index = 1;
+			for (Record r: records) {
+				System.out.println(index + ". " + r);
+				index++;
+			}
+			
+			if (records.size() == 0) System.out.println("It seems no one created [" + queryTerm + "].");
 		}
 	}
 	
@@ -177,7 +225,7 @@ public class QuestionProcessor {
 		*/
 		
 		// Check arguments
-		if (args.length < 4 || !args[1].toLowerCase().equals("who") || !args[2].toLowerCase().equals("created")) {
+		if (args.length < 5 || !args[2].toLowerCase().equals("who") || !args[3].toLowerCase().equals("created")) {
 			printCorrectQuestionFormat();
 			System.exit(0);
 		}
